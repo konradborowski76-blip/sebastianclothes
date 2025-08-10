@@ -12,242 +12,122 @@ type CartItem = { id: string; name: string; price: number; image: string; size: 
 
 const FREE_SHIPPING_THRESHOLD = 20000; // 200 zł
 
-/* ---------- ŁADNIEJSZE „ZDJĘCIA” SUKIENEK (SVG) – bez plików zewnętrznych ---------- */
-/* Szablony sylwetek: 'satin' | 'wrap' | 'linen' | 'pencil' | 'tulle' | 'silk' | 'pleated' | 'knit' | 'fitflare' | 'lace' */
-function dressSVG(
-  style: 'satin'|'wrap'|'linen'|'pencil'|'tulle'|'silk'|'pleated'|'knit'|'fitflare'|'lace',
-  label: string,
-  body = '#f4a3c4',
-  accent = '#be185d',
-  bg = '#ffffff'
-) {
-  // elementy wspólne: gradienty, cień, delikatna faktura tkaniny
-  const defs = `
-    <defs>
-      <linearGradient id='gBody' x1='0' y1='0' x2='0' y2='1'>
-        <stop offset='0' stop-color='${body}' stop-opacity='.98'/>
-        <stop offset='1' stop-color='${body}' stop-opacity='.78'/>
-      </linearGradient>
-      <linearGradient id='gAcc' x1='0' y1='0' x2='1' y2='1'>
-        <stop offset='0' stop-color='${accent}' stop-opacity='.95'/>
-        <stop offset='1' stop-color='${accent}' stop-opacity='.65'/>
-      </linearGradient>
-      <filter id='drop' x='-40%' y='-40%' width='180%' height='180%'>
-        <feDropShadow dx='0' dy='10' stdDeviation='14' flood-color='#000' flood-opacity='.18'/>
-      </filter>
-      <!-- subtelna tekstura materiału -->
-      <filter id='tex' x='-10%' y='-10%' width='120%' height='120%'>
-        <feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch' result='n'/>
-        <feColorMatrix type='saturate' values='0.25'/>
-        <feComponentTransfer>
-          <feFuncA type='table' tableValues='0 0 .05 0'/>
-        </feComponentTransfer>
-        <feBlend in='SourceGraphic' in2='n' mode='overlay'/>
-      </filter>
-      <!-- koronka (kropki) -->
-      <pattern id='lace' patternUnits='userSpaceOnUse' width='14' height='14'>
-        <circle cx='4' cy='4' r='1.2' fill='#fff' opacity='.5'/>
-        <circle cx='10' cy='10' r='1.2' fill='#fff' opacity='.5'/>
-      </pattern>
-      <!-- dzianina (prążki) -->
-      <pattern id='knit' patternUnits='userSpaceOnUse' width='8' height='8' patternTransform='skewX(-15)'>
-        <rect width='8' height='8' fill='${body}'/>
-        <rect x='0' y='0' width='2' height='8' fill='#000' opacity='.06'/>
-      </pattern>
-    </defs>
-  `;
+/* === AI images ===
+ * Używamy generatora obrazów z promptem w URL (bez API key).
+ * Dodajemy "seed" aby wynik był stabilny.
+ */
+const ai = (prompt: string, seed: number) =>
+  `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?seed=${seed}&width=1200&height=1600&nologo=true`;
 
-  // gorset + spódnica zależnie od stylu
-  let top = '';
-  let skirt = '';
-  let overlays = '';
-  if (style === 'satin' || style === 'silk') {
-    top = `
-      <path d='M400 150c-36 0-62 26-70 58l-18 60h176l-18-60c-8-32-34-58-70-58z'
-            fill='url(#gBody)'/>
-    `;
-    skirt = `
-      <path d='M320 268 C300 320 282 390 264 530 L536 530 C518 390 500 320 480 268 Z'
-            fill='url(#gBody)' filter='url(#tex)'/>
-    `;
-    overlays = `
-      <!-- połysk -->
-      <path d='M360 280 C340 340 332 420 328 520' stroke='#fff' stroke-opacity='.35' stroke-width='8'/>
-      <path d='M452 280 C468 340 474 420 476 520' stroke='#000' stroke-opacity='.10' stroke-width='8'/>
-      <rect x='300' y='260' width='200' height='18' rx='9' fill='url(#gAcc)'/>
-    `;
-  }
-  if (style === 'wrap') {
-    top = `
-      <path d='M400 150c-38 0-70 30-72 66l172 0c-2-36-34-66-72-66z' fill='url(#gBody)'/>
-      <!-- V-neck -->
-      <path d="M328 216 L400 280 L472 216 Z" fill='${bg}' opacity='.35'/>
-    `;
-    skirt = `
-      <path d='M312 266 L488 266 L520 530 L280 530 Z'
-            fill='url(#gBody)' filter='url(#tex)'/>
-    `;
-    overlays = `
-      <path d='M320 265 L480 265 L440 530 L360 530 Z' fill='url(#gAcc)' opacity='.18'/>
-      <rect x='300' y='258' width='200' height='20' rx='10' fill='url(#gAcc)'/>
-    `;
-  }
-  if (style === 'linen') {
-    top = `
-      <path d='M400 152c-34 0-60 22-66 50l-10 34h152l-10-34c-6-28-32-50-66-50z'
-            fill='url(#gBody)'/>
-    `;
-    skirt = `
-      <path d='M320 236 C300 300 294 360 290 420 L290 530 L510 530 L510 420
-               C506 360 500 300 480 236 Z' fill='url(#gBody)' filter='url(#tex)'/>
-    `;
-    overlays = `<rect x='300' y='234' width='200' height='16' rx='8' fill='url(#gAcc)' opacity='.7'/>`;
-  }
-  if (style === 'pencil') {
-    top = `
-      <path d='M400 150c-30 0-52 18-58 42l-8 28h132l-8-28c-6-24-28-42-58-42z'
-            fill='url(#gBody)'/>
-    `;
-    skirt = `
-      <path d='M316 220 L484 220 L484 530 L316 530 Z' fill='url(#gBody)'/>
-    `;
-    overlays = `
-      <path d='M400 220 L400 530' stroke='#000' stroke-opacity='.10' stroke-width='6'/>
-      <rect x='300' y='216' width='200' height='16' rx='8' fill='url(#gAcc)'/>
-    `;
-  }
-  if (style === 'tulle') {
-    top = `
-      <path d='M400 148c-30 0-50 20-56 40l-10 30h132l-10-30c-6-20-26-40-56-40z'
-            fill='url(#gBody)'/>
-    `;
-    skirt = `
-      <path d='M320 230 C298 320 292 380 280 530 L520 530 C508 380 502 320 480 230 Z'
-            fill='url(#gBody)'/>
-    `;
-    overlays = `
-      <!-- warstwa tiulu -->
-      <path d='M306 250 C280 330 270 430 262 530 L538 530 C530 430 520 330 494 250 Z'
-            fill='${accent}' opacity='.18'/>
-      <rect x='300' y='228' width='200' height='18' rx='9' fill='url(#gAcc)'/>
-    `;
-  }
-  if (style === 'pleated') {
-    top = `
-      <path d='M400 150c-36 0-62 26-70 58l-14 48h168l-14-48c-8-32-34-58-70-58z'
-            fill='url(#gBody)'/>
-    `;
-    let stripes = '';
-    for (let x = 320; x <= 480; x += 16) {
-      stripes += `<path d='M${x} 258 L ${x + (x<400? -16:16)} 530' stroke='#000' stroke-opacity='.12' stroke-width='6'/>`;
-    }
-    skirt = `
-      <path d='M320 258 C300 310 282 380 264 530 L536 530 C518 380 500 310 480 258 Z'
-            fill='url(#gBody)'/>
-    `;
-    overlays = `<rect x='300' y='256' width='200' height='18' rx='9' fill='url(#gAcc)'/>${stripes}`;
-  }
-  if (style === 'knit') {
-    top = `
-      <path d='M400 154c-34 0-60 22-64 48l-8 26h144l-8-26c-4-26-30-48-64-48z'
-            fill='url(#gBody)'/>
-    `;
-    skirt = `
-      <path d='M320 228 C304 280 300 350 298 530 L502 530 C500 350 496 280 480 228 Z'
-            fill='url(#gBody)'/>
-    `;
-    overlays = `
-      <rect x='300' y='226' width='200' height='16' rx='8' fill='url(#gAcc)'/>
-      <path d='M320 228 C304 280 300 350 298 530 L502 530 C500 350 496 280 480 228 Z'
-            fill='url(#knit)' opacity='.28'/>
-    `;
-  }
-  if (style === 'fitflare') {
-    top = `
-      <path d='M400 150c-28 0-48 14-56 36l-8 26h128l-8-26c-8-22-28-36-56-36z'
-            fill='url(#gBody)'/>
-    `;
-    skirt = `
-      <path d='M308 228 C280 320 274 390 260 530 L540 530 C526 390 520 320 492 228 Z'
-            fill='url(#gBody)' filter='url(#tex)'/>
-    `;
-    overlays = `<rect x='300' y='224' width='200' height='18' rx='9' fill='url(#gAcc)'/>`;
-  }
-  if (style === 'lace') {
-    top = `
-      <path d='M400 152c-36 0-62 26-70 58l-18 60h176l-18-60c-8-32-34-58-70-58z'
-            fill='url(#gBody)'/>
-    `;
-    skirt = `
-      <path d='M320 268 C300 320 284 392 270 530 L530 530 C516 392 500 320 480 268 Z'
-            fill='url(#gBody)'/>
-    `;
-    overlays = `
-      <path d='M320 268 C300 320 284 392 270 530 L530 530 C516 392 500 320 480 268 Z'
-            fill='url(#lace)' opacity='.35'/>
-      <rect x='300' y='260' width='200' height='18' rx='9' fill='url(#gAcc)'/>
-    `;
-  }
+// Fallback – neutralna sukienka (też AI)
+const FALLBACK_AI = ai(
+  'studio photo of an elegant neutral midi dress on invisible mannequin, soft light, plain backdrop, fashion e-commerce',
+  999
+);
 
-  const svg = `
-    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'>
-      ${defs}
-      <rect width='800' height='600' fill='${bg}'/>
-      <g filter='url(#drop)' transform='translate(0,-8)'>
-        <!-- subtelny „wieszak” -->
-        <path d='M360 128 Q400 94 440 128' fill='none' stroke='#d1d5db' stroke-width='10' stroke-linecap='round'/>
-        <!-- sylwetka -->
-        ${top}
-        ${skirt}
-        ${overlays}
-      </g>
-
-      <!-- plakietka z nazwą kolekcji -->
-      <rect x='40' y='40' rx='12' ry='12' fill='white' stroke='#e5e7eb' width='260' height='42'/>
-      <text x='58' y='68' font-family='system-ui,Segoe UI,Roboto,Helvetica,Arial' font-size='20' fill='#111827'>${label}</text>
-    </svg>
-  `;
-  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
-}
-
-function heroSVG() {
-  return dressSVG('silk', 'Nowa kolekcja', '#f59e0b', '#e11d48', '#ffffff');
-}
-
-/* Bezpieczny <img/> – nic nie pobieramy, ale na wszelki wypadek fallback na „hero” */
+// Bezpieczny <img/> – jeśli AI-URL zawiedzie, wstawiamy fallback
 function SafeImg({ src, alt, className }: { src: string; alt: string; className?: string }) {
   const [s, setS] = useState(src);
-  return <img src={s} alt={alt} className={className} loading="lazy" decoding="async" onError={() => setS(heroSVG())} />;
+  return (
+    <img
+      src={s}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      decoding="async"
+      onError={() => { if (s !== FALLBACK_AI) setS(FALLBACK_AI); }}
+      referrerPolicy="no-referrer"
+    />
+  );
 }
 
-/* ---------- Produkty z przypisanym stylem sukienki ---------- */
+/* ===== Produkty (10 sukienek) – AI prompts dobrane pod nazwy i kolory ===== */
 const PRODUCTS: Product[] = [
-  { id:'d1',  name:'Sukienka Mila – satynowa midi', image: dressSVG('satin','Mila – satynowa midi','#f4a3c4','#be185d'),
-    price:21900, oldPrice:25900, rating:4.7, reviews:128, sizes:['XS','S','M','L'], colors:['róż pudrowy','czarna','szampańska'], category:'Sukienki', tags:['nowość','bestseller'] },
-  { id:'d2',  name:'Sukienka Lea – kopertowa maxi',   image: dressSVG('wrap','Lea – kopertowa maxi','#22c1d6','#2563eb'),
-    price:28900, rating:4.8, reviews:203, sizes:['S','M','L','XL'], colors:['butelkowa zieleń','granat'], category:'Sukienki', tags:['wieczorowa'] },
-  { id:'d3',  name:'Sukienka Nola – lniana mini',     image: dressSVG('linen','Nola – lniana mini','#cabfa6','#9dbeb2'),
-    price:17900, rating:4.5, reviews:76,  sizes:['XS','S','M'], colors:['beż','biała'], category:'Sukienki', tags:['letnia','eko'] },
-  { id:'d4',  name:'Sukienka Vera – ołówkowa midi',   image: dressSVG('pencil','Vera – ołówkowa midi','#ef4444','#6b7280'),
-    price:24900, rating:4.6, reviews:91,  sizes:['S','M','L'], colors:['czerwona','czarna'], category:'Sukienki', tags:['do pracy'] },
-  { id:'d5',  name:'Sukienka Aida – tiulowa midi',     image: dressSVG('tulle','Aida – tiulowa midi','#f472b6','#e11d48'),
-    price:31900, oldPrice:34900, rating:4.9, reviews:54,  sizes:['S','M','L'], colors:['pudrowy róż'], category:'Sukienki', tags:['na wesele'] },
-  { id:'d6',  name:'Sukienka Lila – jedwabna maxi',    image: dressSVG('silk','Lila – jedwabna maxi','#10b981','#065f46'),
-    price:36900, rating:4.8, reviews:61,  sizes:['S','M','L'], colors:['szmaragd','czarna'], category:'Sukienki', tags:['premium'] },
-  { id:'d7',  name:'Sukienka Rina – plisowana midi',   image: dressSVG('pleated','Rina – plisowana midi','#8b5cf6','#4f46e5'),
-    price:23900, rating:4.6, reviews:84,  sizes:['XS','S','M','L'], colors:['granat','burgund'], category:'Sukienki', tags:['do biura'] },
-  { id:'d8',  name:'Sukienka Ola – dzianinowa mini',  image: dressSVG('knit','Ola – dzianinowa mini','#d1d5db','#6b7280'),
-    price:16900, rating:4.4, reviews:43,  sizes:['S','M','L'], colors:['krem','czarna'], category:'Sukienki' },
-  { id:'d9',  name:'Sukienka Emi – rozkloszowana',    image: dressSVG('fitflare','Emi – rozkloszowana','#f59e0b','#ea580c'),
-    price:20900, rating:4.5, reviews:71,  sizes:['XS','S','M','L'], colors:['pudrowy róż','mięta'], category:'Sukienki' },
-  { id:'d10', name:'Sukienka Kaja – koronkowa',       image: dressSVG('lace','Kaja – koronkowa','#111827','#e11d48'),
-    price:27900, oldPrice:29900, rating:4.7, reviews:95,  sizes:['S','M','L'], colors:['ecru','czarna'], category:'Sukienki' },
+  {
+    id: 'd1',
+    name: 'Sukienka Mila – satynowa midi',
+    image: ai('studio photo satin midi dress, soft pink color, A-line, elegant, on invisible mannequin, softbox lighting, plain light background, high quality', 101),
+    price: 21900, oldPrice: 25900, rating: 4.7, reviews: 128,
+    sizes: ['XS','S','M','L'], colors: ['róż pudrowy','czarna','szampańska'],
+    category: 'Sukienki', tags: ['nowość','bestseller']
+  },
+  {
+    id: 'd2',
+    name: 'Sukienka Lea – kopertowa maxi',
+    image: ai('studio photo wrap maxi dress, deep green color, waist-tie, V-neck, flowing fabric, on invisible mannequin, fashion ecommerce background', 102),
+    price: 28900, rating: 4.8, reviews: 203,
+    sizes: ['S','M','L','XL'], colors: ['butelkowa zieleń','granat'],
+    category: 'Sukienki', tags: ['wieczorowa']
+  },
+  {
+    id: 'd3',
+    name: 'Sukienka Nola – lniana mini',
+    image: ai('studio photo linen mini dress, beige color, relaxed summer silhouette, natural texture, on invisible mannequin, bright neutral backdrop', 103),
+    price: 17900, rating: 4.5, reviews: 76,
+    sizes: ['XS','S','M'], colors: ['beż','biała'],
+    category: 'Sukienki', tags: ['letnia','eko']
+  },
+  {
+    id: 'd4',
+    name: 'Sukienka Vera – ołówkowa midi',
+    image: ai('studio photo pencil bodycon midi dress, red color, elegant office style, clean silhouette, on invisible mannequin, fashion ecommerce lighting', 104),
+    price: 24900, rating: 4.6, reviews: 91,
+    sizes: ['S','M','L'], colors: ['czerwona','czarna'],
+    category: 'Sukienki', tags: ['do pracy']
+  },
+  {
+    id: 'd5',
+    name: 'Sukienka Aida – tiulowa midi',
+    image: ai('studio photo tulle midi dress, blush pink color, layered skirt, occasion wear, on invisible mannequin, soft airy lighting, plain background', 105),
+    price: 31900, oldPrice: 34900, rating: 4.9, reviews: 54,
+    sizes: ['S','M','L'], colors: ['pudrowy róż'],
+    category: 'Sukienki', tags: ['na wesele']
+  },
+  {
+    id: 'd6',
+    name: 'Sukienka Lila – jedwabna maxi',
+    image: ai('studio photo silk maxi evening gown, emerald green, subtle sheen, elegant drape, on invisible mannequin, luxury fashion, neutral backdrop', 106),
+    price: 36900, rating: 4.8, reviews: 61,
+    sizes: ['S','M','L'], colors: ['szmaragd','czarna'],
+    category: 'Sukienki', tags: ['premium']
+  },
+  {
+    id: 'd7',
+    name: 'Sukienka Rina – plisowana midi',
+    image: ai('studio photo pleated midi dress, navy color, fine pleats, elegant waist, on invisible mannequin, ecommerce background, sharp details', 107),
+    price: 23900, rating: 4.6, reviews: 84,
+    sizes: ['XS','S','M','L'], colors: ['granat','burgund'],
+    category: 'Sukienki', tags: ['do biura']
+  },
+  {
+    id: 'd8',
+    name: 'Sukienka Ola – dzianinowa mini',
+    image: ai('studio photo knit sweater mini dress, cream color, cozy texture, straight silhouette, on invisible mannequin, bright background', 108),
+    price: 16900, rating: 4.4, reviews: 43,
+    sizes: ['S','M','L'], colors: ['krem','czarna'],
+    category: 'Sukienki'
+  },
+  {
+    id: 'd9',
+    name: 'Sukienka Emi – rozkloszowana',
+    image: ai('studio photo fit-and-flare skater dress, pastel pink, flared skirt, feminine, on invisible mannequin, studio lighting, plain backdrop', 109),
+    price: 20900, rating: 4.5, reviews: 71,
+    sizes: ['XS','S','M','L'], colors: ['pudrowy róż','mięta'],
+    category: 'Sukienki'
+  },
+  {
+    id: 'd10',
+    name: 'Sukienka Kaja – koronkowa',
+    image: ai('studio photo lace cocktail dress, ecru color, delicate lace pattern, fitted waist, on invisible mannequin, high quality ecommerce photo', 110),
+    price: 27900, oldPrice: 29900, rating: 4.7, reviews: 95,
+    sizes: ['S','M','L'], colors: ['ecru','czarna'],
+    category: 'Sukienki'
+  },
 ];
 
 const formatPrice = (cents: number) =>
   new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(cents / 100);
 
-/* ---------- Strona ---------- */
 export default function Page() {
   // Filtry / widok
   const [query, setQuery] = useState('');
@@ -293,10 +173,11 @@ export default function Page() {
     return () => io.disconnect();
   }, [filtered.length]);
 
-  // Ulubione + podgląd
+  // Ulubione + podgląd + koszyk
   const [favIds, setFavIds] = useState<string[]>([]);
   const [favsOpen, setFavsOpen] = useState(false);
   const favProducts = PRODUCTS.filter(p => favIds.includes(p.id));
+
   const [quick, setQuick] = useState<Product|null>(null);
   const [selectedSize, setSelectedSize] = useState<string>('');
   function openQuick(p: Product) { setQuick(p); setSelectedSize(p.sizes[0]); }
@@ -386,7 +267,11 @@ export default function Page() {
             </div>
           </div>
           <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{duration:0.6}} className="relative">
-            <SafeImg src={heroSVG()} alt="Hero" className="rounded-3xl shadow-lg aspect-[4/3] object-cover w-full" />
+            <SafeImg
+              src={ai('studio photo silk maxi dress, golden warm color, elegant premium look, on invisible mannequin, soft light, plain background', 1000)}
+              alt="Hero"
+              className="rounded-3xl shadow-lg aspect-[4/3] object-cover w-full"
+            />
             <span className="badge absolute top-3 left-3">Nowa kolekcja</span>
           </motion.div>
         </div>
