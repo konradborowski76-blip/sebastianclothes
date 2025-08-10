@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sc-accent: 236 72 153; /* pink-600 */
+}
+
+html, body {
+  height: 100%;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium border border-neutral-300 bg-white hover:bg-neutral-50 transition;
+}
+
+.btn-primary {
+  @apply bg-pink-600 text-white border-pink-600 hover:bg-pink-700;
+}
+
+.badge {
+  @apply inline-flex items-center rounded-full border border-neutral-200 bg-white/80 px-2 py-0.5 text-xs;
+}
+
+.input {
+  @apply w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-pink-200;
+}
+
+.card {
+  @apply rounded-2xl border border-neutral-200 overflow-hidden bg-white;
+}
+
+.sheet {
+  @apply fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white shadow-2xl border-l border-neutral-200 p-4;
+}
+
+.backdrop {
+  @apply fixed inset-0 bg-black/30;
+}
