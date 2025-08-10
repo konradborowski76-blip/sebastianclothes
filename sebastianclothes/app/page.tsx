@@ -2,38 +2,37 @@
 
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import {
-  ShoppingCart, Heart, Menu, Star, Filter, Search, Shirt, X, Moon, Sun, Eye
-} from 'lucide-react';
+import { ShoppingCart, Heart, Menu, Star, Filter, Search, Shirt, X, Eye } from 'lucide-react';
 
 type Product = {
   id: string; name: string; price: number; oldPrice?: number; rating: number; reviews: number;
   sizes: string[]; colors: string[]; category: string; image: string; tags?: string[];
 };
-
 type CartItem = { id: string; name: string; price: number; image: string; size: string; qty: number; };
 
 const FREE_SHIPPING_THRESHOLD = 20000; // 200 zł
 
-// Obrazek z fallbackiem – jeśli URL padnie, pokaże zapasowy
+// Generator realistycznych zdjęć z Unsplash po słowach kluczowych
+const unsplash = (q: string) => `https://source.unsplash.com/800x600/?${encodeURIComponent(q)}`;
+
+// Obrazek z fallbackiem (gdyby dany link nie zadziałał)
 function SafeImg({ src, alt, className }: { src: string; alt: string; className?: string }) {
   const [s, setS] = useState(src);
-  const FALLBACK =
-    'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=1600&auto=format&fit=crop';
+  const FALLBACK = unsplash('woman,dress,fashion,studio');
   return <img src={s} alt={alt} className={className} loading="lazy" onError={() => setS(FALLBACK)} />;
 }
 
 const PRODUCTS: Product[] = [
-  { id: 'd1',  name: 'Sukienka Mila – satynowa midi', price: 21900, oldPrice: 25900, rating: 4.7, reviews: 128, sizes: ['XS','S','M','L'], colors: ['róż pudrowy','czarna','szampańska'], category: 'Sukienki', image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=1600&auto=format&fit=crop', tags:['nowość','bestseller'] },
-  { id: 'd2',  name: 'Sukienka Lea – kopertowa maxi',   price: 28900, rating: 4.8, reviews: 203, sizes: ['S','M','L','XL'], colors: ['butelkowa zieleń','granat'], category: 'Sukienki', image: 'https://images.unsplash.com/photo-1515378960530-7c0da6231fb1?q=80&w=1600&auto=format&fit=crop', tags:['wieczorowa'] },
-  { id: 'd3',  name: 'Sukienka Nola – lniana mini',     price: 17900, rating: 4.5, reviews: 76,  sizes: ['XS','S','M'], colors: ['beż','biała'], category: 'Sukienki', image: 'https://images.unsplash.com/photo-1542060748-10c28b62716c?q=80&w=1600&auto=format&fit=crop', tags:['letnia','eko'] },
-  { id: 'd4',  name: 'Sukienka Vera – ołówkowa midi',   price: 24900, rating: 4.6, reviews: 91,  sizes: ['S','M','L'], colors: ['czerwona','czarna'], category: 'Sukienki', image: 'https://images.unsplash.com/photo-1520975922215-c65b6c98a4d0?q=80&w=1600&auto=format&fit=crop', tags:['do pracy'] },
-  { id: 'd5',  name: 'Sukienka Aida – tiulowa midi',     price: 31900, oldPrice: 34900, rating: 4.9, reviews: 54,  sizes: ['S','M','L'], colors: ['pudrowy róż'], category: 'Sukienki', image: 'https://images.unsplash.com/photo-1520975922215-223e0a9991b9?q=80&w=1600&auto=format&fit=crop', tags:['na wesele'] },
-  { id: 'd6',  name: 'Sukienka Lila – jedwabna maxi',    price: 36900, rating: 4.8, reviews: 61,  sizes: ['S','M','L'], colors: ['szmaragd','czarna'], category: 'Sukienki', image: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=1600&auto=format&fit=crop', tags:['premium'] },
-  { id: 'd7',  name: 'Sukienka Rina – plisowana midi',   price: 23900, rating: 4.6, reviews: 84,  sizes: ['XS','S','M','L'], colors: ['granat','burgund'], category: 'Sukienki', image: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=1600&auto=format&fit=crop', tags:['do biura'] },
-  { id: 'd8',  name: 'Sukienka Ola – dzianinowa mini',  price: 16900, rating: 4.4, reviews: 43,  sizes: ['S','M','L'], colors: ['krem','czarna'], category: 'Sukienki', image: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=1600&auto=format&fit=crop' },
-  { id: 'd9',  name: 'Sukienka Emi – rozkloszowana',    price: 20900, rating: 4.5, reviews: 71,  sizes: ['XS','S','M','L'], colors: ['pudrowy róż','mięta'], category: 'Sukienki', image: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=1600&auto=format&fit=crop' },
-  { id: 'd10', name: 'Sukienka Kaja – koronkowa',       price: 27900, oldPrice: 29900, rating: 4.7, reviews: 95,  sizes: ['S','M','L'], colors: ['ecru','czarna'], category: 'Sukienki', image: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=1600&auto=format&fit=crop' },
+  { id: 'd1',  name: 'Sukienka Mila – satynowa midi', image: unsplash('woman,dress,satin,midi,studio'),     price: 21900, oldPrice: 25900, rating: 4.7, reviews: 128, sizes: ['XS','S','M','L'], colors: ['róż pudrowy','czarna','szampańska'], category: 'Sukienki', tags:['nowość','bestseller'] },
+  { id: 'd2',  name: 'Sukienka Lea – kopertowa maxi',   image: unsplash('woman,wrap,dress,maxi,elegant'),    price: 28900, rating: 4.8, reviews: 203, sizes: ['S','M','L','XL'], colors: ['butelkowa zieleń','granat'], category: 'Sukienki', tags:['wieczorowa'] },
+  { id: 'd3',  name: 'Sukienka Nola – lniana mini',     image: unsplash('woman,linen,dress,mini,summer'),    price: 17900, rating: 4.5, reviews: 76,  sizes: ['XS','S','M'], colors: ['beż','biała'], category: 'Sukienki', tags:['letnia','eko'] },
+  { id: 'd4',  name: 'Sukienka Vera – ołówkowa midi',   image: unsplash('woman,pencil,dress,midi,office'),   price: 24900, rating: 4.6, reviews: 91,  sizes: ['S','M','L'], colors: ['czerwona','czarna'], category: 'Sukienki', tags:['do pracy'] },
+  { id: 'd5',  name: 'Sukienka Aida – tiulowa midi',     image: unsplash('woman,tulle,dress,midi,wedding'),   price: 31900, oldPrice: 34900, rating: 4.9, reviews: 54,  sizes: ['S','M','L'], colors: ['pudrowy róż'], category: 'Sukienki', tags:['na wesele'] },
+  { id: 'd6',  name: 'Sukienka Lila – jedwabna maxi',    image: unsplash('woman,silk,dress,maxi,evening'),    price: 36900, rating: 4.8, reviews: 61,  sizes: ['S','M','L'], colors: ['szmaragd','czarna'], category: 'Sukienki', tags:['premium'] },
+  { id: 'd7',  name: 'Sukienka Rina – plisowana midi',   image: unsplash('woman,pleated,dress,midi,street'),  price: 23900, rating: 4.6, reviews: 84,  sizes: ['XS','S','M','L'], colors: ['granat','burgund'], category: 'Sukienki', tags:['do biura'] },
+  { id: 'd8',  name: 'Sukienka Ola – dzianinowa mini',  image: unsplash('woman,knit,dress,mini,casual'),     price: 16900, rating: 4.4, reviews: 43,  sizes: ['S','M','L'], colors: ['krem','czarna'], category: 'Sukienki' },
+  { id: 'd9',  name: 'Sukienka Emi – rozkloszowana',    image: unsplash('woman,fit-and-flare,dress,twirl'),  price: 20900, rating: 4.5, reviews: 71,  sizes: ['XS','S','M','L'], colors: ['pudrowy róż','mięta'], category: 'Sukienki' },
+  { id: 'd10', name: 'Sukienka Kaja – koronkowa',       image: unsplash('woman,lace,dress,romantic'),        price: 27900, oldPrice: 29900, rating: 4.7, reviews: 95,  sizes: ['S','M','L'], colors: ['ecru','czarna'], category: 'Sukienki' },
 ];
 
 const formatPrice = (cents: number) =>
@@ -46,36 +45,18 @@ export default function Page() {
   const [sizeFilter, setSizeFilter] = useState<string|''>('');
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Trendy: Dark mode
-  const [dark, setDark] = useState(false);
-  useEffect(() => {
-    const saved = localStorage.getItem('theme') === 'dark';
-    setDark(saved);
-    document.documentElement.classList.toggle('dark', saved);
-  }, []);
-  function toggleDark() {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.classList.toggle('dark', next);
-    localStorage.setItem('theme', next ? 'dark' : 'light');
-  }
-
-  // Trendy: Countdown promo (np. do końca dnia)
+  // Pasek promo z odliczaniem (do końca dnia)
   const [remaining, setRemaining] = useState<string>('00:00:00');
   useEffect(() => {
-    function update() {
-      const now = new Date();
-      const end = new Date();
-      end.setHours(23,59,59,999);
+    const update = () => {
+      const now = new Date(); const end = new Date(); end.setHours(23,59,59,999);
       const ms = Math.max(0, +end - +now);
       const h = String(Math.floor(ms/3_600_000)).padStart(2,'0');
       const m = String(Math.floor(ms%3_600_000/60_000)).padStart(2,'0');
       const s = String(Math.floor(ms%60_000/1000)).padStart(2,'0');
       setRemaining(`${h}:${m}:${s}`);
-    }
-    update();
-    const t = setInterval(update, 1000);
-    return ()=>clearInterval(t);
+    };
+    update(); const t = setInterval(update, 1000); return ()=>clearInterval(t);
   }, []);
 
   // Produkty + infinite scroll
@@ -102,32 +83,26 @@ export default function Page() {
     return () => io.disconnect();
   }, [filtered.length]);
 
-  // Trendy: Ulubione + panel
+  // Ulubione + podgląd + ostatnio oglądane
   const [favIds, setFavIds] = useState<string[]>([]);
   const [favsOpen, setFavsOpen] = useState(false);
   const favProducts = PRODUCTS.filter(p => favIds.includes(p.id));
 
-  // Trendy: Quick View + „ostatnio oglądane”
   const [quick, setQuick] = useState<Product|null>(null);
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [recentIds, setRecentIds] = useState<string[]>([]);
   function openQuick(p: Product) {
-    setQuick(p);
-    setSelectedSize(p.sizes[0]);
-    setRecentIds(prev => {
-      const arr = [p.id, ...prev.filter(id => id !== p.id)];
-      return arr.slice(0, 8);
-    });
+    setQuick(p); setSelectedSize(p.sizes[0]);
+    setRecentIds(prev => [p.id, ...prev.filter(id => id !== p.id)].slice(0, 8));
   }
   const recent = recentIds.map(id => PRODUCTS.find(p => p.id === id)!).filter(Boolean);
 
-  // Trendy: koszyk + darmowa dostawa – progress
+  // Koszyk + darmowa dostawa
   const [cart, setCart] = useState<CartItem[]>([]);
   const cartQty = cart.reduce((s,i)=>s+i.qty, 0);
   const cartTotal = cart.reduce((s,i)=>s+i.qty*i.price, 0);
   const shippingLeft = Math.max(0, FREE_SHIPPING_THRESHOLD - cartTotal);
   const shippingPct = Math.min(100, Math.round(cartTotal / FREE_SHIPPING_THRESHOLD * 100));
-
   function addToCart(p: Product, size: string) {
     setCart(prev => {
       const id = p.id + '-' + size;
@@ -138,22 +113,17 @@ export default function Page() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-neutral-50 text-neutral-900 dark:from-neutral-950 dark:to-neutral-950">
+    <div className="min-h-screen bg-gradient-to-b from-white to-neutral-50 text-neutral-900">
       {/* PROMO BAR */}
       <div className="bg-pink-600 text-white text-sm">
         <div className="max-w-6xl mx-auto px-4 py-2 flex items-center gap-3">
           <span className="font-medium">-20% na sukienki do końca dnia</span>
           <span className="px-2 py-0.5 rounded bg-white/20 font-mono">{remaining}</span>
-          <div className="flex-1" />
-          <button onClick={toggleDark} className="btn bg-white/10 border-white/20 hover:bg-white/20">
-            {dark ? <Sun className="h-4 w-4 mr-2"/> : <Moon className="h-4 w-4 mr-2"/>}
-            {dark ? 'Jasny' : 'Ciemny'} motyw
-          </button>
         </div>
       </div>
 
       {/* Top bar */}
-      <div className="border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-neutral-900/70 dark:border-neutral-800 sticky top-0 z-40">
+      <div className="border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
           <button className="btn" aria-label="menu" onClick={()=>setMenuOpen(true)}><Menu className="h-4 w-4"/></button>
           <div className="flex items-center gap-2 font-bold text-xl tracking-tight">
@@ -168,10 +138,10 @@ export default function Page() {
 
         {/* Free shipping progress */}
         <div className="max-w-6xl mx-auto px-4 pb-3">
-          <div className="h-2 w-full rounded-full bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
+          <div className="h-2 w-full rounded-full bg-neutral-200 overflow-hidden">
             <div className="h-full bg-pink-600" style={{width: `${shippingPct}%`}} />
           </div>
-          <div className="text-xs text-neutral-600 dark:text-neutral-300 mt-1">
+          <div className="text-xs text-neutral-600 mt-1">
             {shippingLeft === 0 ? 'Masz darmową dostawę 🎉' : `Brakuje ${formatPrice(shippingLeft)} do darmowej dostawy`}
           </div>
         </div>
@@ -203,7 +173,7 @@ export default function Page() {
             <motion.h1 initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{duration:0.5}} className="text-3xl md:text-5xl font-bold leading-tight">
               Sukienki, które <span className="text-pink-600">podkreślają</span> Twój styl
             </motion.h1>
-            <p className="mt-3 text-neutral-600 dark:text-neutral-300">
+            <p className="mt-3 text-neutral-600">
               SebastianClothes – eleganckie, wygodne i dopracowane kroje na co dzień i na wielkie wyjścia.
             </p>
             <div className="mt-4 flex gap-2">
@@ -212,7 +182,7 @@ export default function Page() {
             </div>
           </div>
           <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{duration:0.6}} className="relative">
-            <SafeImg src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?q=80&w=1600&auto=format&fit=crop" alt="Hero" className="rounded-3xl shadow-lg aspect-[4/3] object-cover w-full" />
+            <SafeImg src={unsplash('fashion,editorial,woman,dress,soft light')} alt="Hero" className="rounded-3xl shadow-lg aspect-[4/3] object-cover w-full" />
             <span className="badge absolute top-3 left-3">Nowa kolekcja</span>
           </motion.div>
         </div>
@@ -272,7 +242,7 @@ export default function Page() {
                 </div>
                 <div className="p-4">
                   <div className="font-semibold line-clamp-1">{p.name}</div>
-                  <div className="mt-1 text-sm text-neutral-600 dark:text-neutral-300 flex items-center gap-1">
+                  <div className="mt-1 text-sm text-neutral-600 flex items-center gap-1">
                     <Star className="h-4 w-4" /> {p.rating} <span className="text-neutral-400">({p.reviews})</span>
                   </div>
                   <div className="mt-3 flex items-center justify-between">
@@ -286,7 +256,7 @@ export default function Page() {
                       <button className="btn btn-primary" onClick={()=>addToCart(p, p.sizes[0])}>Do koszyka</button>
                     </div>
                   </div>
-                  <div className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">Kolory: {p.colors.join(', ')}</div>
+                  <div className="mt-2 text-xs text-neutral-500">Kolory: {p.colors.join(', ')}</div>
                 </div>
               </motion.div>
             );
@@ -328,7 +298,7 @@ export default function Page() {
         <>
           <div className="backdrop" onClick={()=>setQuick(null)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-2xl rounded-2xl bg-white dark:bg-neutral-900 border dark:border-neutral-800 p-4 shadow-2xl">
+            <div className="w-full max-w-2xl rounded-2xl bg-white border p-4 shadow-2xl">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-semibold line-clamp-1">{quick.name}</h3>
                 <button className="btn" onClick={()=>setQuick(null)}><X className="h-4 w-4"/></button>
@@ -338,10 +308,10 @@ export default function Page() {
                 <div>
                   <div className="text-2xl font-semibold">{formatPrice(quick.price)}</div>
                   <div className="mt-4">
-                    <div className="text-xs uppercase text-neutral-500 dark:text-neutral-400 mb-1">Rozmiar</div>
+                    <div className="text-xs uppercase text-neutral-500 mb-1">Rozmiar</div>
                     <div className="flex flex-wrap gap-2">
                       {quick.sizes.map(s => (
-                        <button key={s} className={`btn ${selectedSize===s?'btn-primary':''}`} onClick={()=>setSelectedSize(s)}>{s}</button>
+                        <button key={s} className={`btn ${s===quick.sizes[0]?'btn-primary':''}`} onClick={()=>setSelectedSize(s)}>{s}</button>
                       ))}
                     </div>
                   </div>
@@ -357,42 +327,22 @@ export default function Page() {
         </>
       )}
 
-      {/* Ostatnio oglądane */}
-      {recent.length > 0 && (
-        <section className="bg-white dark:bg-neutral-900 border-t dark:border-neutral-800">
-          <div className="max-w-6xl mx-auto px-4 py-8">
-            <h3 className="text-lg font-semibold mb-4">Ostatnio oglądane</h3>
-            <div className="grid grid-flow-col auto-cols-[220px] gap-4 overflow-x-auto pb-2">
-              {recent.map(p => (
-                <div key={p.id} className="card min-w-[220px]">
-                  <SafeImg src={p.image} alt={p.name} className="h-36 w-full object-cover" />
-                  <div className="p-3">
-                    <div className="text-sm font-medium line-clamp-2">{p.name}</div>
-                    <div className="text-sm">{formatPrice(p.price)}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* Pływający mini-koszyk */}
-      <div className="fixed bottom-4 right-4 z-50 w-[320px] max-w-[92vw] rounded-2xl border bg-white dark:bg-neutral-900 dark:border-neutral-800 shadow-xl p-3">
+      <div className="fixed bottom-4 right-4 z-50 w-[320px] max-w-[92vw] rounded-2xl border bg-white shadow-xl p-3">
         <div className="flex items-center gap-2">
           <ShoppingCart className="h-4 w-4" />
           <div className="font-medium">Koszyk</div>
-          <div className="text-xs text-neutral-500 dark:text-neutral-400">({cartQty} szt.)</div>
+          <div className="text-xs text-neutral-500">({cartQty} szt.)</div>
           <div className="flex-1" />
           <div className="font-semibold">{formatPrice(cartTotal)}</div>
         </div>
-        <div className="mt-2 h-2 w-full rounded-full bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
+        <div className="mt-2 h-2 w-full rounded-full bg-neutral-200 overflow-hidden">
           <div className="h-full bg-pink-600" style={{width: `${shippingPct}%`}} />
         </div>
-        <div className="mt-1 text-[11px] text-neutral-600 dark:text-neutral-300">
+        <div className="mt-1 text-[11px] text-neutral-600">
           {shippingLeft === 0 ? 'Darmowa dostawa aktywna 🎉' : `Brakuje ${formatPrice(shippingLeft)} do darmowej dostawy`}
         </div>
-        <button className="mt-2 btn btn-primary w-full" onClick={()=>alert('Tu wpinamy Stripe/Przelewy24 (BLIK) – mogę dodać w następnym kroku.')}>
+        <button className="mt-2 btn btn-primary w-full" onClick={()=>alert('Tu będzie płatność (Stripe/Przelewy24 BLIK) – mogę dodać w następnym kroku.')}>
           Przejdź do kasy
         </button>
       </div>
