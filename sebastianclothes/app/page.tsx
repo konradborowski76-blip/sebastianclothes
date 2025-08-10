@@ -6,33 +6,65 @@ import { ShoppingCart, Heart, Menu, Star, Filter, Search, Shirt, X, Eye } from '
 
 type Product = {
   id: string; name: string; price: number; oldPrice?: number; rating: number; reviews: number;
-  sizes: string[]; colors: string[]; category: string; image: string; tags?: string[];
+  sizes: string[]; colors: string[]; category: string; image: string; fallback: string; tags?: string[];
 };
 type CartItem = { id: string; name: string; price: number; image: string; size: string; qty: number; };
 
 const FREE_SHIPPING_THRESHOLD = 20000; // 200 zł
 
-// Generator realistycznych zdjęć z Unsplash po słowach kluczowych
-const unsplash = (q: string) => `https://source.unsplash.com/800x600/?${encodeURIComponent(q)}`;
+// Stabilne zdjęcia po słowach kluczowych (bez API) + „lock” żeby zawsze był ten sam kadr
+const img = (seed: number, tags: string) =>
+  `https://loremflickr.com/800/600/${encodeURIComponent(tags)}?lock=${seed}`;
 
-// Obrazek z fallbackiem (gdyby dany link nie zadziałał)
-function SafeImg({ src, alt, className }: { src: string; alt: string; className?: string }) {
+// Obrazek z pewnym fallbackiem (gdyby główny URL nie zadziałał)
+function SafeImg({ src, alt, fallback, className }:{
+  src: string; alt: string; fallback: string; className?: string
+}) {
   const [s, setS] = useState(src);
-  const FALLBACK = unsplash('woman,dress,fashion,studio');
-  return <img src={s} alt={alt} className={className} loading="lazy" onError={() => setS(FALLBACK)} />;
+  return (
+    <img
+      src={s}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      decoding="async"
+      referrerPolicy="no-referrer"
+      onError={() => { if (s !== fallback) setS(fallback); }}
+    />
+  );
 }
 
 const PRODUCTS: Product[] = [
-  { id: 'd1',  name: 'Sukienka Mila – satynowa midi', image: unsplash('woman,dress,satin,midi,studio'),     price: 21900, oldPrice: 25900, rating: 4.7, reviews: 128, sizes: ['XS','S','M','L'], colors: ['róż pudrowy','czarna','szampańska'], category: 'Sukienki', tags:['nowość','bestseller'] },
-  { id: 'd2',  name: 'Sukienka Lea – kopertowa maxi',   image: unsplash('woman,wrap,dress,maxi,elegant'),    price: 28900, rating: 4.8, reviews: 203, sizes: ['S','M','L','XL'], colors: ['butelkowa zieleń','granat'], category: 'Sukienki', tags:['wieczorowa'] },
-  { id: 'd3',  name: 'Sukienka Nola – lniana mini',     image: unsplash('woman,linen,dress,mini,summer'),    price: 17900, rating: 4.5, reviews: 76,  sizes: ['XS','S','M'], colors: ['beż','biała'], category: 'Sukienki', tags:['letnia','eko'] },
-  { id: 'd4',  name: 'Sukienka Vera – ołówkowa midi',   image: unsplash('woman,pencil,dress,midi,office'),   price: 24900, rating: 4.6, reviews: 91,  sizes: ['S','M','L'], colors: ['czerwona','czarna'], category: 'Sukienki', tags:['do pracy'] },
-  { id: 'd5',  name: 'Sukienka Aida – tiulowa midi',     image: unsplash('woman,tulle,dress,midi,wedding'),   price: 31900, oldPrice: 34900, rating: 4.9, reviews: 54,  sizes: ['S','M','L'], colors: ['pudrowy róż'], category: 'Sukienki', tags:['na wesele'] },
-  { id: 'd6',  name: 'Sukienka Lila – jedwabna maxi',    image: unsplash('woman,silk,dress,maxi,evening'),    price: 36900, rating: 4.8, reviews: 61,  sizes: ['S','M','L'], colors: ['szmaragd','czarna'], category: 'Sukienki', tags:['premium'] },
-  { id: 'd7',  name: 'Sukienka Rina – plisowana midi',   image: unsplash('woman,pleated,dress,midi,street'),  price: 23900, rating: 4.6, reviews: 84,  sizes: ['XS','S','M','L'], colors: ['granat','burgund'], category: 'Sukienki', tags:['do biura'] },
-  { id: 'd8',  name: 'Sukienka Ola – dzianinowa mini',  image: unsplash('woman,knit,dress,mini,casual'),     price: 16900, rating: 4.4, reviews: 43,  sizes: ['S','M','L'], colors: ['krem','czarna'], category: 'Sukienki' },
-  { id: 'd9',  name: 'Sukienka Emi – rozkloszowana',    image: unsplash('woman,fit-and-flare,dress,twirl'),  price: 20900, rating: 4.5, reviews: 71,  sizes: ['XS','S','M','L'], colors: ['pudrowy róż','mięta'], category: 'Sukienki' },
-  { id: 'd10', name: 'Sukienka Kaja – koronkowa',       image: unsplash('woman,lace,dress,romantic'),        price: 27900, oldPrice: 29900, rating: 4.7, reviews: 95,  sizes: ['S','M','L'], colors: ['ecru','czarna'], category: 'Sukienki' },
+  { id:'d1',  name:'Sukienka Mila – satynowa midi', image: img(101,'woman,dress,satin,midi,studio'),
+    fallback:`https://picsum.photos/seed/dress-101/800/600`, price:21900, oldPrice:25900, rating:4.7, reviews:128,
+    sizes:['XS','S','M','L'], colors:['róż pudrowy','czarna','szampańska'], category:'Sukienki', tags:['nowość','bestseller'] },
+  { id:'d2',  name:'Sukienka Lea – kopertowa maxi',   image: img(102,'woman,wrap,dress,maxi,elegant'),
+    fallback:`https://picsum.photos/seed/dress-102/800/600`, price:28900, rating:4.8, reviews:203,
+    sizes:['S','M','L','XL'], colors:['butelkowa zieleń','granat'], category:'Sukienki', tags:['wieczorowa'] },
+  { id:'d3',  name:'Sukienka Nola – lniana mini',     image: img(103,'woman,linen,dress,mini,summer'),
+    fallback:`https://picsum.photos/seed/dress-103/800/600`, price:17900, rating:4.5, reviews:76,
+    sizes:['XS','S','M'], colors:['beż','biała'], category:'Sukienki', tags:['letnia','eko'] },
+  { id:'d4',  name:'Sukienka Vera – ołówkowa midi',   image: img(104,'woman,pencil,dress,midi,office'),
+    fallback:`https://picsum.photos/seed/dress-104/800/600`, price:24900, rating:4.6, reviews:91,
+    sizes:['S','M','L'], colors:['czerwona','czarna'], category:'Sukienki', tags:['do pracy'] },
+  { id:'d5',  name:'Sukienka Aida – tiulowa midi',     image: img(105,'woman,tulle,dress,midi,wedding'),
+    fallback:`https://picsum.photos/seed/dress-105/800/600`, price:31900, oldPrice:34900, rating:4.9, reviews:54,
+    sizes:['S','M','L'], colors:['pudrowy róż'], category:'Sukienki', tags:['na wesele'] },
+  { id:'d6',  name:'Sukienka Lila – jedwabna maxi',    image: img(106,'woman,silk,dress,maxi,evening'),
+    fallback:`https://picsum.photos/seed/dress-106/800/600`, price:36900, rating:4.8, reviews:61,
+    sizes:['S','M','L'], colors:['szmaragd','czarna'], category:'Sukienki', tags:['premium'] },
+  { id:'d7',  name:'Sukienka Rina – plisowana midi',   image: img(107,'woman,pleated,dress,midi,street'),
+    fallback:`https://picsum.photos/seed/dress-107/800/600`, price:23900, rating:4.6, reviews:84,
+    sizes:['XS','S','M','L'], colors:['granat','burgund'], category:'Sukienki', tags:['do biura'] },
+  { id:'d8',  name:'Sukienka Ola – dzianinowa mini',  image: img(108,'woman,knit,dress,mini,casual'),
+    fallback:`https://picsum.photos/seed/dress-108/800/600`, price:16900, rating:4.4, reviews:43,
+    sizes:['S','M','L'], colors:['krem','czarna'], category:'Sukienki' },
+  { id:'d9',  name:'Sukienka Emi – rozkloszowana',    image: img(109,'woman,fit-and-flare,dress,twirl'),
+    fallback:`https://picsum.photos/seed/dress-109/800/600`, price:20900, rating:4.5, reviews:71,
+    sizes:['XS','S','M','L'], colors:['pudrowy róż','mięta'], category:'Sukienki' },
+  { id:'d10', name:'Sukienka Kaja – koronkowa',       image: img(110,'woman,lace,dress,romantic'),
+    fallback:`https://picsum.photos/seed/dress-110/800/600`, price:27900, oldPrice:29900, rating:4.7, reviews:95,
+    sizes:['S','M','L'], colors:['ecru','czarna'], category:'Sukienki' },
 ];
 
 const formatPrice = (cents: number) =>
@@ -182,7 +214,7 @@ export default function Page() {
             </div>
           </div>
           <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{duration:0.6}} className="relative">
-            <SafeImg src={unsplash('fashion,editorial,woman,dress,soft light')} alt="Hero" className="rounded-3xl shadow-lg aspect-[4/3] object-cover w-full" />
+            <SafeImg src={img(999,'fashion,editorial,woman,dress,soft light')} fallback="https://picsum.photos/seed/hero-999/800/600" alt="Hero" className="rounded-3xl shadow-lg aspect-[4/3] object-cover w-full" />
             <span className="badge absolute top-3 left-3">Nowa kolekcja</span>
           </motion.div>
         </div>
@@ -229,7 +261,7 @@ export default function Page() {
                 className="card"
               >
                 <div className="relative">
-                  <SafeImg src={p.image} alt={p.name} className="h-72 w-full object-cover" />
+                  <SafeImg src={p.image} fallback={p.fallback} alt={p.name} className="h-72 w-full object-cover" />
                   <button
                     className="absolute top-3 right-3 inline-flex items-center justify-center rounded-full bg-white/90 backdrop-blur p-2 shadow border"
                     onClick={()=>setFavIds(f=>f.includes(p.id)?f.filter(x=>x!==p.id):[...f,p.id])}
@@ -280,7 +312,7 @@ export default function Page() {
               {favProducts.length === 0 && <p className="text-sm text-neutral-500">Nie masz jeszcze ulubionych.</p>}
               {favProducts.map(p => (
                 <div key={p.id} className="flex gap-3">
-                  <SafeImg src={p.image} alt={p.name} className="h-16 w-12 object-cover rounded" />
+                  <SafeImg src={p.image} fallback={p.fallback} alt={p.name} className="h-16 w-12 object-cover rounded" />
                   <div className="flex-1">
                     <div className="text-sm font-medium line-clamp-2">{p.name}</div>
                     <div className="text-sm">{formatPrice(p.price)}</div>
@@ -290,40 +322,6 @@ export default function Page() {
               ))}
             </div>
           </aside>
-        </>
-      )}
-
-      {/* Quick View – modal */}
-      {quick && (
-        <>
-          <div className="backdrop" onClick={()=>setQuick(null)} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-2xl rounded-2xl bg-white border p-4 shadow-2xl">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold line-clamp-1">{quick.name}</h3>
-                <button className="btn" onClick={()=>setQuick(null)}><X className="h-4 w-4"/></button>
-              </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <SafeImg src={quick.image} alt={quick.name} className="rounded-lg aspect-[4/5] object-cover w-full" />
-                <div>
-                  <div className="text-2xl font-semibold">{formatPrice(quick.price)}</div>
-                  <div className="mt-4">
-                    <div className="text-xs uppercase text-neutral-500 mb-1">Rozmiar</div>
-                    <div className="flex flex-wrap gap-2">
-                      {quick.sizes.map(s => (
-                        <button key={s} className={`btn ${s===quick.sizes[0]?'btn-primary':''}`} onClick={()=>setSelectedSize(s)}>{s}</button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="mt-5">
-                    <button className="btn btn-primary w-full" onClick={()=>{ addToCart(quick, selectedSize || quick.sizes[0]); setQuick(null); }}>
-                      Dodaj do koszyka
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </>
       )}
 
