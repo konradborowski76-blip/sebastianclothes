@@ -1,7 +1,6 @@
 'use client';
 
-import Image from 'next/image';
-import { useMemo, useState, useEffect, useRef } from 'react'; // ← DODANE
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Menu, Star, Filter, Search, Shirt, X } from 'lucide-react';
 
@@ -32,7 +31,7 @@ export default function Page() {
   const [favIds, setFavIds] = useState<string[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // ↓↓↓ AUTO-DOŁADOWYWANIE
+  // --- auto-doładowanie podczas przewijania ---
   const [visible, setVisible] = useState(6);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
@@ -44,21 +43,16 @@ export default function Page() {
     return list;
   }, [query, sort, sizeFilter]);
 
-  // resetuj widoczną liczbę przy zmianie filtrów
   useEffect(() => { setVisible(Math.min(6, filtered.length)); }, [query, sort, sizeFilter, filtered.length]);
 
-  // doładowuj, gdy strażnik wejdzie w viewport
   useEffect(() => {
     if (!loadMoreRef.current) return;
     const io = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setVisible(v => Math.min(v + 6, filtered.length));
-      }
+      if (entry.isIntersecting) setVisible(v => Math.min(v + 6, filtered.length));
     }, { rootMargin: '200px' });
     io.observe(loadMoreRef.current);
     return () => io.disconnect();
   }, [filtered.length]);
-  // ↑↑↑ AUTO-DOŁADOWYWANIE
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-neutral-50 text-neutral-900">
@@ -116,7 +110,7 @@ export default function Page() {
             </div>
           </div>
           <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{duration:0.6}} className="relative">
-            <Image unoptimized src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?q=80&w=1600&auto=format&fit=crop" alt="Hero" width={1200} height={900} className="rounded-3xl shadow-lg aspect-[4/3] object-cover" />
+            <img src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?q=80&w=1600&auto=format&fit=crop" alt="Hero" className="rounded-3xl shadow-lg aspect-[4/3] object-cover w-full" loading="lazy" />
             <span className="badge absolute top-3 left-3">Nowa kolekcja</span>
           </motion.div>
         </div>
@@ -150,7 +144,7 @@ export default function Page() {
       {/* Products */}
       <section id="products" className="max-w-6xl mx-auto px-4 pb-14">
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.slice(0, visible).map((p, idx) => ( // ← używamy visible
+          {filtered.slice(0, visible).map((p, idx) => (
             <motion.div
               key={p.id}
               initial={{ opacity: 0, y: 18 }}
@@ -160,7 +154,7 @@ export default function Page() {
               className="card"
             >
               <div className="relative">
-                <Image unoptimized src={p.image} alt={p.name} width={800} height={600} className="h-72 w-full object-cover"/>
+                <img src={p.image} alt={p.name} className="h-72 w-full object-cover" loading="lazy" />
                 <button
                   className="absolute top-3 right-3 inline-flex items-center justify-center rounded-full bg-white/90 backdrop-blur p-2 shadow border"
                   onClick={()=>setFavIds(f=>f.includes(p.id)?f.filter(x=>x!==p.id):[...f,p.id])}
