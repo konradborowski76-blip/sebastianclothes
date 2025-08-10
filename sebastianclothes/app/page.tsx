@@ -6,65 +6,101 @@ import { ShoppingCart, Heart, Menu, Star, Filter, Search, Shirt, X, Eye } from '
 
 type Product = {
   id: string; name: string; price: number; oldPrice?: number; rating: number; reviews: number;
-  sizes: string[]; colors: string[]; category: string; image: string; fallback: string; tags?: string[];
+  sizes: string[]; colors: string[]; category: string; image: string; tags?: string[];
 };
 type CartItem = { id: string; name: string; price: number; image: string; size: string; qty: number; };
 
 const FREE_SHIPPING_THRESHOLD = 20000; // 200 zł
 
-// Stabilne zdjęcia po słowach kluczowych (bez API) + „lock” żeby zawsze był ten sam kadr
-const img = (seed: number, tags: string) =>
-  `https://loremflickr.com/800/600/${encodeURIComponent(tags)}?lock=${seed}`;
+/** ====== Generator „realistycznego” zdjęcia sukienki (SVG -> data URL) ======
+ * Każde zdjęcie to lekka grafika wektorowa z cieniowaniem, bez zewnętrznych plików.
+ * Możesz zmienić kolory/napisy przekazując inne wartości.
+ */
+function dressSVG(label: string, body: string, accent: string, bg = '#fafafa') {
+  const svg = `
+  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'>
+    <defs>
+      <linearGradient id='g1' x1='0' y1='0' x2='0' y2='1'>
+        <stop offset='0' stop-color='${body}' stop-opacity='.98'/>
+        <stop offset='1' stop-color='${body}' stop-opacity='.75'/>
+      </linearGradient>
+      <linearGradient id='g2' x1='0' y1='0' x2='1' y2='1'>
+        <stop offset='0' stop-color='${accent}' stop-opacity='.9'/>
+        <stop offset='1' stop-color='${accent}' stop-opacity='.5'/>
+      </linearGradient>
+      <filter id='shadow' x='-40%' y='-40%' width='180%' height='180%'>
+        <feDropShadow dx='0' dy='8' stdDeviation='12' flood-color='#000' flood-opacity='.18'/>
+      </filter>
+    </defs>
 
-// Obrazek z pewnym fallbackiem (gdyby główny URL nie zadziałał)
-function SafeImg({ src, alt, fallback, className }:{
-  src: string; alt: string; fallback: string; className?: string
-}) {
+    <rect width='800' height='600' fill='${bg}'/>
+    <g transform='translate(0,-10)' filter='url(#shadow)'>
+      <!-- manekin/ramię -->
+      <rect x='380' y='120' width='40' height='24' rx='12' fill='#e5e7eb'/>
+      <!-- góra sukienki (gorset) -->
+      <path d='M400 140
+               c-34 0 -58 24 -66 54l-18 56
+               h168l-18 -56c-8 -30 -32 -54 -66 -54z'
+            fill='url(#g1)'/>
+      <!-- pasek -->
+      <rect x='300' y='250' width='200' height='18' rx='9' fill='url(#g2)'/>
+
+      <!-- spódnica w kształcie A z łagodnymi fałdami -->
+      <path d='M320 260
+               C300 310 282 380 264 520
+               L536 520
+               C518 380 500 310 480 260
+               Z'
+            fill='url(#g1)'/>
+      <!-- delikatne fałdy/połysk -->
+      <path d='M350 270 C340 320 334 420 328 520' stroke='white' stroke-opacity='.25' stroke-width='6' />
+      <path d='M452 270 C462 320 468 420 474 520' stroke='#000' stroke-opacity='.08' stroke-width='6' />
+
+      <!-- akcent na ramieniu -->
+      <circle cx='470' cy='210' r='10' fill='url(#g2)'/>
+    </g>
+
+    <!-- podpis kolekcji -->
+    <rect x='40' y='40' rx='14' ry='14' fill='white' stroke='#e5e7eb' width='220' height='42'/>
+    <text x='58' y='68' font-family='system-ui,Segoe UI,Roboto,Helvetica,Arial' font-size='20' fill='#111827'>${label}</text>
+  </svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+/** Zdjęcie „hero” (większy kadr) */
+function heroSVG() {
+  return dressSVG('Nowa kolekcja', '#f59e0b', '#e11d48', '#ffffff');
+}
+
+/** Bezpieczny <img/> – nic nie pobieramy z internetu, więc fallback raczej niepotrzebny,
+ *  ale zostawiamy na wszelki wypadek.
+ */
+function SafeImg({ src, alt, className }: { src: string; alt: string; className?: string }) {
   const [s, setS] = useState(src);
-  return (
-    <img
-      src={s}
-      alt={alt}
-      className={className}
-      loading="lazy"
-      decoding="async"
-      referrerPolicy="no-referrer"
-      onError={() => { if (s !== fallback) setS(fallback); }}
-    />
-  );
+  return <img src={s} alt={alt} className={className} loading="lazy" decoding="async" onError={() => setS(heroSVG())} />;
 }
 
 const PRODUCTS: Product[] = [
-  { id:'d1',  name:'Sukienka Mila – satynowa midi', image: img(101,'woman,dress,satin,midi,studio'),
-    fallback:`https://picsum.photos/seed/dress-101/800/600`, price:21900, oldPrice:25900, rating:4.7, reviews:128,
-    sizes:['XS','S','M','L'], colors:['róż pudrowy','czarna','szampańska'], category:'Sukienki', tags:['nowość','bestseller'] },
-  { id:'d2',  name:'Sukienka Lea – kopertowa maxi',   image: img(102,'woman,wrap,dress,maxi,elegant'),
-    fallback:`https://picsum.photos/seed/dress-102/800/600`, price:28900, rating:4.8, reviews:203,
-    sizes:['S','M','L','XL'], colors:['butelkowa zieleń','granat'], category:'Sukienki', tags:['wieczorowa'] },
-  { id:'d3',  name:'Sukienka Nola – lniana mini',     image: img(103,'woman,linen,dress,mini,summer'),
-    fallback:`https://picsum.photos/seed/dress-103/800/600`, price:17900, rating:4.5, reviews:76,
-    sizes:['XS','S','M'], colors:['beż','biała'], category:'Sukienki', tags:['letnia','eko'] },
-  { id:'d4',  name:'Sukienka Vera – ołówkowa midi',   image: img(104,'woman,pencil,dress,midi,office'),
-    fallback:`https://picsum.photos/seed/dress-104/800/600`, price:24900, rating:4.6, reviews:91,
-    sizes:['S','M','L'], colors:['czerwona','czarna'], category:'Sukienki', tags:['do pracy'] },
-  { id:'d5',  name:'Sukienka Aida – tiulowa midi',     image: img(105,'woman,tulle,dress,midi,wedding'),
-    fallback:`https://picsum.photos/seed/dress-105/800/600`, price:31900, oldPrice:34900, rating:4.9, reviews:54,
-    sizes:['S','M','L'], colors:['pudrowy róż'], category:'Sukienki', tags:['na wesele'] },
-  { id:'d6',  name:'Sukienka Lila – jedwabna maxi',    image: img(106,'woman,silk,dress,maxi,evening'),
-    fallback:`https://picsum.photos/seed/dress-106/800/600`, price:36900, rating:4.8, reviews:61,
-    sizes:['S','M','L'], colors:['szmaragd','czarna'], category:'Sukienki', tags:['premium'] },
-  { id:'d7',  name:'Sukienka Rina – plisowana midi',   image: img(107,'woman,pleated,dress,midi,street'),
-    fallback:`https://picsum.photos/seed/dress-107/800/600`, price:23900, rating:4.6, reviews:84,
-    sizes:['XS','S','M','L'], colors:['granat','burgund'], category:'Sukienki', tags:['do biura'] },
-  { id:'d8',  name:'Sukienka Ola – dzianinowa mini',  image: img(108,'woman,knit,dress,mini,casual'),
-    fallback:`https://picsum.photos/seed/dress-108/800/600`, price:16900, rating:4.4, reviews:43,
-    sizes:['S','M','L'], colors:['krem','czarna'], category:'Sukienki' },
-  { id:'d9',  name:'Sukienka Emi – rozkloszowana',    image: img(109,'woman,fit-and-flare,dress,twirl'),
-    fallback:`https://picsum.photos/seed/dress-109/800/600`, price:20900, rating:4.5, reviews:71,
-    sizes:['XS','S','M','L'], colors:['pudrowy róż','mięta'], category:'Sukienki' },
-  { id:'d10', name:'Sukienka Kaja – koronkowa',       image: img(110,'woman,lace,dress,romantic'),
-    fallback:`https://picsum.photos/seed/dress-110/800/600`, price:27900, oldPrice:29900, rating:4.7, reviews:95,
-    sizes:['S','M','L'], colors:['ecru','czarna'], category:'Sukienki' },
+  { id:'d1',  name:'Sukienka Mila – satynowa midi', image: dressSVG('Mila – satynowa midi', '#f4a3c4', '#be185d'),
+    price:21900, oldPrice:25900, rating:4.7, reviews:128, sizes:['XS','S','M','L'], colors:['róż pudrowy','czarna','szampańska'], category:'Sukienki', tags:['nowość','bestseller'] },
+  { id:'d2',  name:'Sukienka Lea – kopertowa maxi',   image: dressSVG('Lea – kopertowa maxi', '#0ea5e9', '#2563eb'),
+    price:28900, rating:4.8, reviews:203, sizes:['S','M','L','XL'], colors:['butelkowa zieleń','granat'], category:'Sukienki', tags:['wieczorowa'] },
+  { id:'d3',  name:'Sukienka Nola – lniana mini',     image: dressSVG('Nola – lniana mini', '#94a3b8', '#0ea5e9'),
+    price:17900, rating:4.5, reviews:76,  sizes:['XS','S','M'], colors:['beż','biała'], category:'Sukienki', tags:['letnia','eko'] },
+  { id:'d4',  name:'Sukienka Vera – ołówkowa midi',   image: dressSVG('Vera – ołówkowa', '#ef4444', '#6b7280'),
+    price:24900, rating:4.6, reviews:91,  sizes:['S','M','L'], colors:['czerwona','czarna'], category:'Sukienki', tags:['do pracy'] },
+  { id:'d5',  name:'Sukienka Aida – tiulowa midi',     image: dressSVG('Aida – tiulowa', '#f472b6', '#e11d48'),
+    price:31900, oldPrice:34900, rating:4.9, reviews:54,  sizes:['S','M','L'], colors:['pudrowy róż'], category:'Sukienki', tags:['na wesele'] },
+  { id:'d6',  name:'Sukienka Lila – jedwabna maxi',    image: dressSVG('Lila – jedwabna maxi', '#10b981', '#065f46'),
+    price:36900, rating:4.8, reviews:61,  sizes:['S','M','L'], colors:['szmaragd','czarna'], category:'Sukienki', tags:['premium'] },
+  { id:'d7',  name:'Sukienka Rina – plisowana midi',   image: dressSVG('Rina – plisowana', '#8b5cf6', '#4f46e5'),
+    price:23900, rating:4.6, reviews:84,  sizes:['XS','S','M','L'], colors:['granat','burgund'], category:'Sukienki', tags:['do biura'] },
+  { id:'d8',  name:'Sukienka Ola – dzianinowa mini',  image: dressSVG('Ola – dzianinowa', '#d1d5db', '#6b7280'),
+    price:16900, rating:4.4, reviews:43,  sizes:['S','M','L'], colors:['krem','czarna'], category:'Sukienki' },
+  { id:'d9',  name:'Sukienka Emi – rozkloszowana',    image: dressSVG('Emi – rozkloszowana', '#f59e0b', '#ea580c'),
+    price:20900, rating:4.5, reviews:71,  sizes:['XS','S','M','L'], colors:['pudrowy róż','mięta'], category:'Sukienki' },
+  { id:'d10', name:'Sukienka Kaja – koronkowa',       image: dressSVG('Kaja – koronkowa', '#111827', '#e11d48'),
+    price:27900, oldPrice:29900, rating:4.7, reviews:95,  sizes:['S','M','L'], colors:['ecru','czarna'], category:'Sukienki' },
 ];
 
 const formatPrice = (cents: number) =>
@@ -115,19 +151,14 @@ export default function Page() {
     return () => io.disconnect();
   }, [filtered.length]);
 
-  // Ulubione + podgląd + ostatnio oglądane
+  // Ulubione + podgląd + koszyk
   const [favIds, setFavIds] = useState<string[]>([]);
   const [favsOpen, setFavsOpen] = useState(false);
   const favProducts = PRODUCTS.filter(p => favIds.includes(p.id));
 
   const [quick, setQuick] = useState<Product|null>(null);
   const [selectedSize, setSelectedSize] = useState<string>('');
-  const [recentIds, setRecentIds] = useState<string[]>([]);
-  function openQuick(p: Product) {
-    setQuick(p); setSelectedSize(p.sizes[0]);
-    setRecentIds(prev => [p.id, ...prev.filter(id => id !== p.id)].slice(0, 8));
-  }
-  const recent = recentIds.map(id => PRODUCTS.find(p => p.id === id)!).filter(Boolean);
+  function openQuick(p: Product) { setQuick(p); setSelectedSize(p.sizes[0]); }
 
   // Koszyk + darmowa dostawa
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -214,7 +245,7 @@ export default function Page() {
             </div>
           </div>
           <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{duration:0.6}} className="relative">
-            <SafeImg src={img(999,'fashion,editorial,woman,dress,soft light')} fallback="https://picsum.photos/seed/hero-999/800/600" alt="Hero" className="rounded-3xl shadow-lg aspect-[4/3] object-cover w-full" />
+            <SafeImg src={heroSVG()} alt="Hero" className="rounded-3xl shadow-lg aspect-[4/3] object-cover w-full" />
             <span className="badge absolute top-3 left-3">Nowa kolekcja</span>
           </motion.div>
         </div>
@@ -261,7 +292,7 @@ export default function Page() {
                 className="card"
               >
                 <div className="relative">
-                  <SafeImg src={p.image} fallback={p.fallback} alt={p.name} className="h-72 w-full object-cover" />
+                  <SafeImg src={p.image} alt={p.name} className="h-72 w-full object-cover" />
                   <button
                     className="absolute top-3 right-3 inline-flex items-center justify-center rounded-full bg-white/90 backdrop-blur p-2 shadow border"
                     onClick={()=>setFavIds(f=>f.includes(p.id)?f.filter(x=>x!==p.id):[...f,p.id])}
@@ -312,7 +343,7 @@ export default function Page() {
               {favProducts.length === 0 && <p className="text-sm text-neutral-500">Nie masz jeszcze ulubionych.</p>}
               {favProducts.map(p => (
                 <div key={p.id} className="flex gap-3">
-                  <SafeImg src={p.image} fallback={p.fallback} alt={p.name} className="h-16 w-12 object-cover rounded" />
+                  <SafeImg src={p.image} alt={p.name} className="h-16 w-12 object-cover rounded" />
                   <div className="flex-1">
                     <div className="text-sm font-medium line-clamp-2">{p.name}</div>
                     <div className="text-sm">{formatPrice(p.price)}</div>
